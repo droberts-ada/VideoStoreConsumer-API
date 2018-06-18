@@ -1,4 +1,5 @@
 class MovieWrapper
+  class DuplicateMovieException < StandardError; end
   BASE_URL = "https://api.themoviedb.org/3/"
   KEY = ENV["MOVIEDB_KEY"]
 
@@ -18,6 +19,29 @@ class MovieWrapper
       end
       return movies
     end
+  end
+
+  def self.find(external_id)
+    if Movie.find_by(external_id: external_id)
+      raise DuplicateMovieException
+    end
+
+    url = BASE_URL + 'movie/' + external_id
+
+    puts "Sending request to #{url}"
+
+    url += '?api_key=' + KEY
+
+    response = HTTParty.get(url)
+    if response.code == 200
+      return construct_movie(response)
+    elsif response.code == 404
+      puts "Movie not found :("
+      return nil
+    end
+
+    puts "Request failed with status #{response.code}"
+    puts response
   end
 
   private
